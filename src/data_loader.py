@@ -1,6 +1,6 @@
-import os
 import logging
-from typing import Tuple
+import os
+
 import pandas as pd
 import requests
 import yaml
@@ -8,9 +8,11 @@ import yaml
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
+
 def load_config(config_path: str = "config/config.yaml") -> dict:
-    with open(config_path, "r") as f:
+    with open(config_path) as f:
         return yaml.safe_load(f)
+
 
 def download_dataset(config_path: str = "config/config.yaml") -> pd.DataFrame:
     config = load_config(config_path)
@@ -41,7 +43,8 @@ def download_dataset(config_path: str = "config/config.yaml") -> pd.DataFrame:
     df["target"] = (df["target"] > 0).astype(int)
     return df
 
-def get_train_test_split(config_path: str = "config/config.yaml") -> Tuple[pd.DataFrame, pd.DataFrame]:
+
+def get_train_test_split(config_path: str = "config/config.yaml") -> tuple[pd.DataFrame, pd.DataFrame]:
     from sklearn.model_selection import train_test_split
 
     config = load_config(config_path)
@@ -52,13 +55,14 @@ def get_train_test_split(config_path: str = "config/config.yaml") -> Tuple[pd.Da
         df,
         test_size=config["data"]["test_size"],
         random_state=config["data"]["random_state"],
-        stratify=df["target"]
+        stratify=df["target"],
     )
 
     train_df.to_csv(config["data"]["processed_train_path"], index=False)
     test_df.to_csv(config["data"]["processed_test_path"], index=False)
     logger.info(f"Saved processed partitions: Train={train_df.shape}, Test={test_df.shape}")
     return train_df, test_df
+
 
 if __name__ == "__main__":
     get_train_test_split()

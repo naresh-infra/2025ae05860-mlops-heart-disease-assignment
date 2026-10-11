@@ -1,10 +1,12 @@
-import yaml
 from sklearn.compose import ColumnTransformer
-from sklearn.preprocessing import StandardScaler, OneHotEncoder
+from sklearn.preprocessing import OneHotEncoder, StandardScaler
+import yaml
+
 
 def load_config(config_path: str = "config/config.yaml") -> dict:
-    with open(config_path, "r") as f:
+    with open(config_path) as f:
         return yaml.safe_load(f)
+
 
 def build_preprocessor(config_path: str = "config/config.yaml") -> ColumnTransformer:
     config = load_config(config_path)
@@ -16,6 +18,6 @@ def build_preprocessor(config_path: str = "config/config.yaml") -> ColumnTransfo
             ("num", StandardScaler(), num_cols),
             ("cat", OneHotEncoder(handle_unknown="ignore", sparse_output=False), cat_cols),
         ],
-        remainder="drop"
+        remainder="drop",
     )
     return preprocessor

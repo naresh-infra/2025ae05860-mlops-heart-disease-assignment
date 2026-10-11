@@ -1,4 +1,5 @@
 import os
+
 import joblib
 import mlflow
 import mlflow.sklearn
@@ -10,6 +11,7 @@ from sklearn.pipeline import Pipeline
 
 from src.data_loader import download_dataset, load_config
 from src.features import build_preprocessor
+
 
 def train_and_track():
     config = load_config()
@@ -25,7 +27,7 @@ def train_and_track():
         ),
         "RandomForestClassifier": RandomForestClassifier(
             n_estimators=100, max_depth=5, min_samples_split=4, random_state=config["data"]["random_state"]
-        )
+        ),
     }
 
     mlflow.set_experiment("Heart_Disease_Risk_Prediction")
@@ -39,7 +41,7 @@ def train_and_track():
     for name, estimator in models.items():
         pipeline = Pipeline(steps=[
             ("preprocessor", preprocessor),
-            ("classifier", estimator)
+            ("classifier", estimator),
         ])
 
         cv_results = cross_validate(pipeline, X, y, cv=skf, scoring=scoring)
@@ -58,12 +60,11 @@ def train_and_track():
                 mean_metrics[metric] = mean_val
                 print(f"[{name}] {metric.upper()}: {mean_val:.4f} (+/- {std_val:.4f})")
 
-            # Fit pipeline on all data and log model artifact using cloudpickle format
             pipeline.fit(X, y)
             mlflow.sklearn.log_model(
                 sk_model=pipeline,
                 artifact_path="model",
-                serialization_format="cloudpickle"
+                serialization_format="cloudpickle",
             )
 
             if mean_metrics["roc_auc"] > best_roc_auc:
@@ -76,6 +77,7 @@ def train_and_track():
     joblib.dump(best_pipeline, artifact_path)
     print(f"\n---> Selected Champion Model: {best_model_name} with CV ROC-AUC: {best_roc_auc:.4f}")
     print(f"---> Saved Production Pipeline Artifact to: {artifact_path}")
+
 
 if __name__ == "__main__":
     train_and_track()
