@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 
 import joblib
 import mlflow
@@ -30,7 +31,11 @@ def train_and_track():
         ),
     }
 
+    # Set explicit relative local tracking directory
+    local_tracking_path = Path("mlruns").resolve().as_uri()
+    mlflow.set_tracking_uri(local_tracking_path)
     mlflow.set_experiment("Heart_Disease_Risk_Prediction")
+
     skf = StratifiedKFold(n_splits=5, shuffle=True, random_state=config["data"]["random_state"])
     scoring = ["accuracy", "precision", "recall", "roc_auc"]
 
@@ -63,7 +68,7 @@ def train_and_track():
             pipeline.fit(X, y)
             mlflow.sklearn.log_model(
                 sk_model=pipeline,
-                artifact_path="model",
+                name="model",
                 serialization_format="cloudpickle",
             )
 
