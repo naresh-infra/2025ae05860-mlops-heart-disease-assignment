@@ -114,5 +114,5 @@ def predict(payload: PatientInput):
         )
     except Exception as exc:
         REQUEST_COUNT.labels(method="POST", endpoint=endpoint, status=500).inc()
-        logger.exception(f"Inference error: {exc!s}")
+        logger.exception("Inference error occurred")
         raise HTTPException(status_code=500, detail="Inference pipeline failure.") from exc
