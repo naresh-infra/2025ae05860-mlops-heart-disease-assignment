@@ -13,6 +13,9 @@ from sklearn.pipeline import Pipeline
 from src.data_loader import download_dataset, load_config
 from src.features import build_preprocessor
 
+# Allow local file store tracking
+os.environ["MLFLOW_ALLOW_FILE_STORE"] = "true"
+
 
 def train_and_track():
     config = load_config()
@@ -31,7 +34,8 @@ def train_and_track():
         ),
     }
 
-    # Set explicit relative local tracking directory
+    # Ensure local directory exists and point tracking URI to it
+    os.makedirs("mlruns", exist_ok=True)
     local_tracking_path = Path("mlruns").resolve().as_uri()
     mlflow.set_tracking_uri(local_tracking_path)
     mlflow.set_experiment("Heart_Disease_Risk_Prediction")
