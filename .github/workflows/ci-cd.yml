@@ -11,19 +11,26 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - name: Set up Python 3.11
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+          cache: "pip"
+
       - name: Install dependencies
         run: |
-          pip install --upgrade pip
+          python -m pip install --upgrade pip
           pip install --prefer-binary -r requirements.txt
+
       - name: Lint with Ruff
         run: ruff check .
+
       - name: Train model and track with MLflow
         run: python -m src.train
+
       - name: Run Pytest test suite
-        run: pytest tests/ -v
+        run: PYTHONPATH=. python -m pytest tests/ -v
+
       - name: Build Docker Container
         run: docker build -t heart-disease-api:latest .
