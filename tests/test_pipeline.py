@@ -65,7 +65,7 @@ def test_api_predict_valid(valid_patient):
 
 def test_api_predict_invalid_schema(valid_patient):
     bad_payload = valid_patient.copy()
-    bad_payload["age"] = -10.0  # Fails ge=1.0 validation
+    bad_payload["age"] = -10.0
     with TestClient(app) as client:
         res = client.post("/predict", json=bad_payload)
         assert res.status_code == 422
