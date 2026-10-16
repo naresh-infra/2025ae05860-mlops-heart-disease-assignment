@@ -74,13 +74,17 @@ The training script creates a `Pipeline` that includes:
 - preprocessing steps for numerical and categorical columns
 - the selected estimator
 
-The evaluation uses 5-fold stratified cross-validation and reports:
+The training pipeline tunes model parameters with 5-fold stratified cross-validation
+on the training partition, selects the candidate with the strongest mean ROC-AUC,
+and evaluates it on a held-out test partition. It logs the following for each
+candidate:
 - accuracy
 - precision
 - recall
 - ROC-AUC
 
-The best-performing model according to ROC-AUC is then saved as the production model artifact in `models/heart_disease_pipeline.pkl`.
+Metrics are recorded for both cross-validation and held-out evaluation. The
+selected production pipeline is saved in `models/heart_disease_pipeline.pkl`.
 
 ## Data Description
 
@@ -103,6 +107,7 @@ The project config file in `config/config.yaml` defines:
 The codebase is organized into a clean ML project structure:
 
 - `src/data_loader.py` - dataset loading, configuration loading, and preprocessing setup
+- `src/eda.py` - reusable EDA visualization generation for standalone and training runs
 - `src/features.py` - feature preprocessing logic
 - `src/train.py` - model training, MLflow logging, and saving the production pipeline
 - `src/app.py` - FastAPI inference service and Prometheus metrics integration
@@ -111,6 +116,29 @@ The codebase is organized into a clean ML project structure:
 - `config/config.yaml` - centralized project configuration
 - `k8s/` - Kubernetes manifests for deployment
 - `.github/workflows/ci-cd.yml` - CI/CD automation
+
+### Architecture
+
+```mermaid
+flowchart LR
+    UCI[UCI Heart Disease Dataset] --> DL[Data loading and cleaning]
+    DL --> EDA[EDA figures]
+    DL --> PP[Scaling and one-hot encoding]
+    PP --> CV[Stratified cross-validation]
+    CV --> LR[Logistic Regression]
+    CV --> RF[Random Forest]
+    LR --> MLflow[MLflow parameters, metrics, models, and EDA artifacts]
+    RF --> MLflow
+    LR --> Champion[Best ROC-AUC pipeline]
+    RF --> Champion
+    Champion --> Artifact[models/heart_disease_pipeline.pkl]
+    Artifact --> API[FastAPI /predict]
+    API --> Metrics[Prometheus /metrics and JSON logs]
+    CI[GitHub Actions] --> DL
+    CI --> CV
+    CI --> Tests[Pytest]
+    CI --> Image[Docker build and runtime smoke test]
+```
 
 ## Tech Stack
 
@@ -153,6 +181,7 @@ mlops-heart-disease/
 ├── src/
 │   ├── app.py
 │   ├── data_loader.py
+│   ├── eda.py
 │   ├── features.py
 │   ├── train.py
 │   └── __init__.py
@@ -198,7 +227,37 @@ It performs the following:
 To train the model:
 
 ```bash
-python src/train.py
+python -m src.train
+```
+
+The training run generates EDA figures, stratifies the configured held-out test
+split, and tunes each candidate model using 5-fold cross-validation on the training
+partition. Logistic Regression searches `C` values of `0.01`, `0.1`, `1`, and `10`;
+Random Forest searches tree counts of `100` and `200`, depths of `None`, `3`, and
+`5`, and minimum split sizes of `2` and `4`. The best candidate for each model
+family is selected by cross-validation ROC-AUC, then evaluated on the held-out
+test set. MLflow records the selected parameters, CV and test metrics, serialized
+model, the full grid-search results table, and EDA plots for each run. The final
+production pipeline is selected by cross-validation ROC-AUC and saved to
+`models/heart_disease_pipeline.pkl`.
+
+To run the standalone data preparation and EDA scripts:
+
+```bash
+python -m src.data_loader
+```
+
+On Windows PowerShell:
+
+```powershell
+$env:PYTHONPATH = "."
+python notebooks\01_exploratory_data_analysis.py
+```
+
+On Linux/macOS:
+
+```bash
+PYTHONPATH=. python notebooks/01_exploratory_data_analysis.py
 ```
 
 ## Inference API
@@ -270,7 +329,7 @@ pip install -r requirements.txt
 ### 4. Run the training pipeline
 
 ```bash
-python src/train.py
+python -m src.train
 ```
 
 ### 5. Start the API
@@ -325,14 +384,40 @@ pytest
 
 The tests validate:
 - dataset integrity
+- missing-value imputation and target binarization
 - preprocessing correctness
+- EDA figure generation
 - API health endpoint
 - prediction endpoint success
 - invalid input rejection
 
 ## CI/CD
 
-GitHub Actions workflow is configured in `.github/workflows/ci-cd.yml` to automate linting and validation tasks.
+The GitHub Actions workflow in `.github/workflows/ci-cd.yml` runs dependency
+installation and validation, strict Ruff linting, data preparation, EDA, training,
+and pytest. It then builds the Docker image, starts it as a container, checks
+`/health`, sends a sample request to `/predict`, and uploads MLflow and model
+artifacts for the workflow run. Any failed command or endpoint check fails the job.
+
+The same image smoke test can be run locally after building the image:
+
+```bash
+docker build -t heart-disease-api .
+docker run --rm -p 8000:8000 heart-disease-api
+```
+
+In another terminal, verify model readiness and submit a sample request using the
+example above. The CI workflow performs both checks automatically and cleans up
+the test container.
+
+## Deployment Status
+
+Kubernetes manifests are provided under `k8s/`, including a two-replica
+Deployment, a LoadBalancer Service, and an Ingress. They are deployment
+configuration, not proof of a live cluster deployment. To demonstrate production
+deployment for a submission, apply the manifests to a configured Kubernetes
+cluster, verify the resulting service and `/health` and `/predict` endpoints, and
+save genuine deployment screenshots in `screenshots/`.
 
 ## Notes
 
