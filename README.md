@@ -308,6 +308,29 @@ curl -X POST "http://localhost:8000/predict" \
 
 ## Local Setup
 
+### BITS Prayogshala (Conda)
+
+The lab may open a terminal in the shared `(base)` environment, which does not
+automatically include this project's dependencies. Create and activate a separate
+environment, then install the repository requirements before starting the API.
+Python 3.11 matches the version used by the CI workflow:
+
+```bash
+conda create -n heart-disease python=3.11 pip -y
+conda activate heart-disease
+cd ~/workspace/MLOps-Assignement/2025ae05860-mlops-heart-disease-assignment
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+python -m pip check
+python -m src.train
+python -m uvicorn src.app:app --host 0.0.0.0 --port 8000
+```
+
+Keep the terminal running Uvicorn open. Use the lab's browser or port-forwarding
+feature to open `http://localhost:8000/docs`. Always start Uvicorn with
+`python -m uvicorn` from the activated environment so it uses the same Python
+interpreter where the project dependencies were installed.
+
 ### 1. Clone the repository
 
 ```bash
