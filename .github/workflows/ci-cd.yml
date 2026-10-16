@@ -86,7 +86,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          kind load docker-image heart-disease-api:latest
+          kind load docker-image heart-disease-api:latest --name chart-testing
           kubectl apply -f k8s/
           kubectl rollout status deployment/heart-disease-api-deployment --timeout=180s
           kubectl get deployment,service,ingress,pods -o wide | tee k8s-deployment-evidence.txt
