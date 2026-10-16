@@ -177,6 +177,9 @@ mlops-heart-disease/
 ├── notebooks/
 │   └── 01_exploratory_data_analysis.py
 ├── reports/
+│   ├── Assignment_01_MLOps_Report.docx
+│   ├── architecture.png
+│   ├── project_overview.mp4
 │   └── figures/
 ├── src/
 │   ├── app.py
@@ -397,7 +400,10 @@ The GitHub Actions workflow in `.github/workflows/ci-cd.yml` runs dependency
 installation and validation, strict Ruff linting, data preparation, EDA, training,
 and pytest. It then builds the Docker image, starts it as a container, checks
 `/health`, sends a sample request to `/predict`, and uploads MLflow and model
-artifacts for the workflow run. Any failed command or endpoint check fails the job.
+artifacts for the workflow run. It also creates a temporary Kind Kubernetes
+cluster, applies the deployment manifests, waits for rollout, and checks the
+service's health and prediction endpoints. Deployment evidence is uploaded with
+the workflow artifacts. Any failed command or endpoint check fails the job.
 
 The same image smoke test can be run locally after building the image:
 
@@ -414,10 +420,20 @@ the test container.
 
 Kubernetes manifests are provided under `k8s/`, including a two-replica
 Deployment, a LoadBalancer Service, and an Ingress. They are deployment
-configuration, not proof of a live cluster deployment. To demonstrate production
+configuration; CI deploys them to an ephemeral Kind cluster and verifies rollout,
+service health, and prediction behavior. This demonstrates repeatable Kubernetes
+deployment in CI, not a persistent cloud deployment. To demonstrate a persistent
 deployment for a submission, apply the manifests to a configured Kubernetes
 cluster, verify the resulting service and `/health` and `/predict` endpoints, and
 save genuine deployment screenshots in `screenshots/`.
+
+## Assignment Deliverables
+
+- Detailed report: `reports/Assignment_01_MLOps_Report.docx`
+- Architecture illustration: `reports/architecture.png`
+- Project overview: `reports/project_overview.mp4` (slide-based, not a live screen recording)
+- Live Kubernetes deployment proof and genuine deployment screenshots still need to
+  be captured after a cluster is available.
 
 ## Notes
 

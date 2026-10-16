@@ -79,6 +79,45 @@ jobs:
             http://127.0.0.1:8000/predict | tee prediction.json
           python -c "import json; response=json.load(open('prediction.json')); assert response['prediction'] in (0, 1); assert 0 <= response['risk_score'] <= 1; assert response['status'] in ('healthy', 'risk_detected')"
 
+      - name: Create ephemeral Kubernetes cluster
+        uses: helm/kind-action@v1.12.0
+
+      - name: Deploy and verify on Kubernetes
+        shell: bash
+        run: |
+          set -euo pipefail
+          kind load docker-image heart-disease-api:latest
+          kubectl apply -f k8s/
+          kubectl rollout status deployment/heart-disease-api-deployment --timeout=180s
+          kubectl get deployment,service,ingress,pods -o wide | tee k8s-deployment-evidence.txt
+          kubectl port-forward service/heart-disease-api-service 8001:80 >k8s-port-forward.log 2>&1 &
+          port_forward_pid=$!
+          cleanup() {
+            kill "$port_forward_pid" >/dev/null 2>&1 || true
+            kubectl logs deployment/heart-disease-api-deployment --all-pods=true || true
+          }
+          trap cleanup EXIT
+
+          ready=false
+          for attempt in {1..30}; do
+            if curl --fail --silent http://127.0.0.1:8001/health; then
+              ready=true
+              break
+            fi
+            sleep 2
+          done
+          if [ "$ready" != true ]; then
+            cat k8s-port-forward.log
+            echo "Kubernetes service did not become healthy."
+            exit 1
+          fi
+
+          curl --fail --show-error --silent \
+            --header "Content-Type: application/json" \
+            --data '{"age":58,"sex":1,"cp":2,"trestbps":120,"chol":240,"fbs":0,"restecg":1,"thalach":160,"exang":0,"oldpeak":1.2,"slope":1,"ca":0,"thal":3}' \
+            http://127.0.0.1:8001/predict | tee k8s-prediction.json
+          python -c "import json; response=json.load(open('k8s-prediction.json')); assert response['prediction'] in (0, 1); assert 0 <= response['risk_score'] <= 1; assert response['status'] in ('healthy', 'risk_detected')"
+
       - name: Upload pipeline artifacts
         if: always()
         uses: actions/upload-artifact@v4
@@ -88,4 +127,7 @@ jobs:
             mlruns-ci/
             reports/figures/
             models/heart_disease_pipeline.pkl
+            k8s-deployment-evidence.txt
+            k8s-prediction.json
+            k8s-port-forward.log
           if-no-files-found: warn
