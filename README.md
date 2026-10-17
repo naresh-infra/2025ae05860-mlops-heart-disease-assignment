@@ -454,9 +454,11 @@ save genuine deployment screenshots in `screenshots/`.
 
 - Detailed report: `reports/Assignment_01_MLOps_Report.docx`
 - Architecture illustration: `reports/architecture.png`
-- Project overview: `reports/project_overview.mp4` (slide-based, not a live screen recording)
-- Live Kubernetes deployment proof and genuine deployment screenshots still need to
-  be captured after a cluster is available.
+- Project overview: `reports/project_overview.mp4` (slide-based)
+- Pipeline screen recording: `reports/2025ae05860-mlops-heart-disease-assignment-compressed.mp4`
+- CI verifies deployment in an ephemeral Kubernetes cluster. A persistent deployment
+  and its screenshots are still required if a lasting cloud/cluster deployment is
+  expected for submission.
 
 ## Notes
 
