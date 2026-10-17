@@ -177,7 +177,7 @@ mlops-heart-disease/
 ├── notebooks/
 │   └── 01_exploratory_data_analysis.py
 ├── reports/
-│   ├── Assignment_01_MLOps_Report.docx
+│   ├── Assignment_01_MLOps_Report_Updated.docx
 │   ├── architecture.png
 │   ├── project_overview.mp4
 │   └── figures/
@@ -452,7 +452,7 @@ save genuine deployment screenshots in `screenshots/`.
 
 ## Assignment Deliverables
 
-- Detailed report: `reports/Assignment_01_MLOps_Report.docx`
+- Detailed report: `reports/Assignment_01_MLOps_Report_Updated.docx`
 - Architecture illustration: `reports/architecture.png`
 - Project overview: `reports/project_overview.mp4` (slide-based)
 - Pipeline screen recording: `reports/2025ae05860-mlops-heart-disease-assignment-compressed.mp4`
